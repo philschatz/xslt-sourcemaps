@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "xslt",
+            "name": "Transform (XSLT)",
+            "request": "launch",
+            "sourcePath": "${workspaceFolder}/test/input.xml",
+            "xslPath": "${workspaceFolder}/test/transform.xsl",
+            "destinationPath": "${workspaceFolder}/test/output.xml"
+        },
+        {
             "type": "java",
             "name": "CodeLens (Launch) - Main",
             "request": "launch",

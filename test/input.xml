@@ -1,3 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
+    <foo id="foo123"/>
+    <foo id="foo234"/>
+
     <body id="id123" />
 </html>

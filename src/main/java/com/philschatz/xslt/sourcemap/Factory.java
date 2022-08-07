@@ -12,7 +12,6 @@ public class Factory extends SerializerFactory {
     }
 
     public Emitter newXMLEmitter(Properties properties) {
-        System.out.println("AKLSJdlkjsdlajsdlkj");
         return new SourcemapXMLEmitter();
     }
 }
