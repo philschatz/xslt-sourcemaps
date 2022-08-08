@@ -2,7 +2,6 @@ package com.philschatz.xslt.sourcemap;
 
 import net.sf.saxon.Controller;
 import net.sf.saxon.expr.XPathContext;
-import net.sf.saxon.expr.instruct.TraceExpression;
 import net.sf.saxon.expr.parser.Location;
 import net.sf.saxon.lib.Logger;
 import net.sf.saxon.lib.TraceListener;
@@ -27,54 +26,57 @@ public class SourceTraceListener implements TraceListener {
 
     @Override
     public void enter(InstructionInfo instruction, XPathContext context) {
+        NodeInfo item = (NodeInfo) context.getContextItem();
+        System.out.println(String.format("TraceListener.enter %s %s", Hack.toDisplay(instruction), item.toShortString()));
+
         switch (instruction.getConstructType()) {
             case StandardNames.XSL_ELEMENT:
             case StandardNames.XSL_ATTRIBUTE:
             case StandardNames.XSL_COMMENT:
             case StandardNames.XSL_TEXT:
                 Location instr = (Location) instruction;
-                System.out.println(String.format("TraceListener:Pushing XSLT %s %d:%d", instr.getSystemId(), instr.getLineNumber(), instr.getColumnNumber()));
-                SingletonHack.currentInstructionContexts.add(instr);
+                Hack.outOfBandStack.add(instr);
                 break;
             case StandardNames.XSL_COPY:
             case StandardNames.XSL_COPY_OF:
-                NodeInfo item = (NodeInfo) context.getContextItem();
-                System.out.println(String.format("TraceListener:Pushing source %s %s %d:%d", item.getDisplayName(), item.getSystemId(), item.getLineNumber(), item.getColumnNumber()));
-                SingletonHack.currentInstructionContexts.add(item);
+                Hack.outOfBandStack.add(item);
                 break;
             default:
                 if (instruction.getConstructType() >= 1024) {
                     // This instruction is not a built-in one. So it _must_ be an instruction that creates a new element (e.g. `<para>` in the XSLT)
-                    TraceExpression exp = (TraceExpression) instruction;
-                    System.out.println(String.format("TraceListener:Pushing XSLT %s %d:%d", exp.getSystemId(), exp.getLineNumber(), exp.getColumnNumber()));
-                    SingletonHack.currentInstructionContexts.add(exp);
-                } else {
-                    // Example: <xsl:template>
-                    System.out.println(String.format("TraceListener:Pushing Something else!!!!"));
-                    SingletonHack.currentInstructionContexts.add(null);
+                    Hack.outOfBandStack.add(instruction);
                 }
         }
     }
 
     @Override
     public void leave(InstructionInfo instruction) {
-        System.out.println(String.format("TraceListener:Popping (%d left)", SingletonHack.currentInstructionContexts.size()));
-        SingletonHack.currentInstructionContexts.pop();
+        System.out.println(String.format("TraceListener:leave %s (%d left)", Hack.toDisplay(instruction), Hack.outOfBandStack.size()));
+        // System.out.println(String.format("TraceListener:Popping (%d left)", SingletonHack.currentInstructionContexts.size()));
+        switch (instruction.getConstructType()) {
+            case StandardNames.XSL_ELEMENT:
+            case StandardNames.XSL_ATTRIBUTE:
+            case StandardNames.XSL_COMMENT:
+            case StandardNames.XSL_TEXT:
+            case StandardNames.XSL_COPY:
+            case StandardNames.XSL_COPY_OF:
+                Hack.outOfBandStack.pop();
+                break;
+            default: // Do nothing
+        }
     }
 
     @SuppressWarnings("all")
     @Override
     public void startCurrentItem(Item currentItem) {
-        SingletonHack.currentItems.push(currentItem);
+        NodeInfo item = (NodeInfo) currentItem;
+        System.out.println(String.format("TraceListener:startItem %s", item.toShortString()));
     }
 
     @SuppressWarnings("all")
     @Override
     public void endCurrentItem(Item currentItem) {
-        // SingletonHack.currentItems.pop();
-        if (!SingletonHack.currentItems.pop().equals(currentItem)) {
-            throw new Error("BUG: THe number of items on the stack are wrong");
-        }
+        NodeInfo item = (NodeInfo) currentItem;
+        System.out.println(String.format("TraceListener:endItem  %s", item.toShortString()));
     }
-    
 }
