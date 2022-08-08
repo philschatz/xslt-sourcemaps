@@ -81,6 +81,7 @@ public class SourcemapXMLEmitter extends XMLEmitter {
 
     @Override
     public void close() throws XPathException {
+        super.comment("Hello! I will become an inline sourcemap", null, -1);
         super.close();
         // Probably write the sourcemap file out now
     }
