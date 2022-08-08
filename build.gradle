@@ -2,11 +2,12 @@ plugins {
 	id 'java'
 	id 'java-library'
 	id 'application'
+	// id 'maven-publish'
 }
 
 version = '0.1.1'
 
-mainClassName = 'com.philschatz.xslt.sourcemap.Factory'
+mainClassName = 'com.philschatz.xslt.sourcemap.Main'
 description = 'Source Mappings for XSLT'
 
 sourceCompatibility = 1.8
@@ -15,9 +16,11 @@ targetCompatibility = 1.8
 repositories {
 	mavenCentral()
 	maven { url 'https://jitpack.io' }
+	maven { url 'https://repository.jsweet.org/artifactory/libs-release-local/' }
 }
 
 dependencies {
+	implementation 'org.jsweet.ext:sourcemap-builder:1.0.0'
 	implementation 'net.sf.saxon:Saxon-HE:9.9.1-7'
 	testImplementation 'junit:junit:4.12'
 }
@@ -25,3 +28,16 @@ dependencies {
 run {
   standardInput = System.in
 }
+
+// // the GAV of the generated POM can be set here
+// publishing {
+//     publications {
+//         maven(MavenPublication) {
+//             groupId = 'edu.bbte.gradleex.mavenplugin'
+//             artifactId = 'gradleex-mavenplugin'
+//             version = '1.0.0-SNAPSHOT'
+
+//             from components.java
+//         }
+//     }
+// }
