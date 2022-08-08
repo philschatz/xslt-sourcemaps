@@ -6,4 +6,11 @@
       <para xmlns:h="http://www.w3.org/1999/xhtml">adfksjfskdf</para>
    </body>
 </html>
-<!--Hello! I will become an inline sourcemap-->
+<!--{
+"version":3,
+"lineCount":9,
+"mappings":"A;uCAEuB;CAAA,K,QAAA,6BAAA,CAAA;IAAA,I,KAAA,OAAA,EACA;IAAA,I,KAAA,OAAA,ECSZ;IAAA,KAAA,CAAA;OAAA,K,UAAA,6BAAA,CAAA,WAAA,ODPa;IAAA,OAJoB;CAAA;",
+"sources":["file:/home/phil/git/mine/xslt-sourcemaps/./test/input.xml","file:/home/phil/git/mine/xslt-sourcemaps/./test/transform.xsl"],
+"names":[]
+}
+--><!--# sourceMappingUrl=data:application/json;base64,ewoidmVyc2lvbiI6MywKImxpbmVDb3VudCI6OSwKIm1hcHBpbmdzIjoiQTt1Q0FFdUI7Q0FBQSxLLFFBQUEsNkJBQUEsQ0FBQTtJQUFBLEksS0FBQSxPQUFBLEVBQ0E7SUFBQSxJLEtBQUEsT0FBQSxFQ1NaO0lBQUEsS0FBQSxDQUFBO09BQUEsSyxVQUFBLDZCQUFBLENBQUEsV0FBQSxPRFBhO0lBQUEsT0FKb0I7Q0FBQTsiLAoic291cmNlcyI6WyJmaWxlOi9ob21lL3BoaWwvZ2l0L21pbmUveHNsdC1zb3VyY2VtYXBzLy4vdGVzdC9pbnB1dC54bWwiLCJmaWxlOi9ob21lL3BoaWwvZ2l0L21pbmUveHNsdC1zb3VyY2VtYXBzLy4vdGVzdC90cmFuc2Zvcm0ueHNsIl0sCiJuYW1lcyI6W10KfQo=-->

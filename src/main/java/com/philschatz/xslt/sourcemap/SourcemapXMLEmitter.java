@@ -3,10 +3,18 @@ package com.philschatz.xslt.sourcemap;
 import net.sf.saxon.serialize.XMLEmitter;
 import net.sf.saxon.trans.XPathException;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.Writer;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
+import java.util.Base64;
+
+import com.google.debugging.sourcemap.FilePosition;
+import com.google.debugging.sourcemap.SourceMapFormat;
+import com.google.debugging.sourcemap.SourceMapGenerator;
+import com.google.debugging.sourcemap.SourceMapGeneratorFactory;
 
 import net.sf.saxon.expr.parser.Location;
 import net.sf.saxon.om.Item;
@@ -17,6 +25,8 @@ import net.sf.saxon.type.SchemaType;
 import net.sf.saxon.type.SimpleType;
 
 public class SourcemapXMLEmitter extends XMLEmitter {
+
+    private SourceMapGenerator sourceMap = SourceMapGeneratorFactory.getInstance(SourceMapFormat.DEFAULT);
 
     // public SourcemapXMLEmitter() {
     //     System.out.println("woot, constructed!");
@@ -52,7 +62,14 @@ public class SourcemapXMLEmitter extends XMLEmitter {
         }
     }
 
-    private void addMapping(Location source) {
+    private FilePosition getCurrentPosition() {
+        CountingWriter myWriter = (CountingWriter) writer;
+        if (myWriter == null) {
+            return new FilePosition(0, 0); // write may not be initialized yet
+        }
+        return new FilePosition(myWriter.cursorLine + 1, myWriter.cursorColumn + 1);
+    }
+    private void addMapping(Location source, FilePosition start) {
         CountingWriter myWriter = (CountingWriter) writer;
         if (myWriter == null) {
             System.out.println("Skipping addMapping because writer has not been initialized yet");
@@ -60,6 +77,7 @@ public class SourcemapXMLEmitter extends XMLEmitter {
             System.out.println("Skipping addMapping because the source node is null");
         } else {
             System.out.println(String.format("addMapping from %d:%d to %s %d:%d", myWriter.cursorLine + 1, myWriter.cursorColumn + 1, source.getSystemId(), source.getLineNumber(), source.getColumnNumber()));
+            sourceMap.addMapping(source.getSystemId(), null, new FilePosition(source.getLineNumber(), source.getColumnNumber()), start, getCurrentPosition());
         }
     }
 
@@ -81,7 +99,18 @@ public class SourcemapXMLEmitter extends XMLEmitter {
 
     @Override
     public void close() throws XPathException {
-        super.comment("Hello! I will become an inline sourcemap", null, -1);
+        // https://github.com/thlorenz/convert-source-map/issues/59
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintStream ps = new PrintStream(baos);
+        try {
+            sourceMap.appendTo(ps, null);
+        } catch (IOException e) {
+            // Ignore Error
+        }
+        byte[] serialized = baos.toByteArray();
+        String encoded = new String(Base64.getEncoder().encode(serialized));
+        super.comment(new String(serialized), null, -1);
+        super.comment(String.format("# sourceMappingUrl=data:application/json;base64,%s", encoded), null, -1);
         super.close();
         // Probably write the sourcemap file out now
     }
@@ -89,8 +118,8 @@ public class SourcemapXMLEmitter extends XMLEmitter {
     @Override
     public void startElement(NodeName elemName, SchemaType typeCode, Location location, int properties) throws XPathException {
         Location node = getNode();
+        FilePosition start = getCurrentPosition();
         System.out.println(String.format("Serializer.startElement %s @ %s %d:%d", elemName.getDisplayName(), node.getSystemId(), node.getLineNumber(), node.getColumnNumber()));
-        addMapping(node);
         if (node instanceof NodeInfo) {
             NodeInfo n = (NodeInfo) node;
             if (n.getDisplayName() != elemName.getDisplayName()) {
@@ -98,28 +127,32 @@ public class SourcemapXMLEmitter extends XMLEmitter {
             }
         }
         super.startElement(elemName, typeCode, location, properties);
+        addMapping(node, start);
     }
 
     @Override
     public void namespace(NamespaceBindingSet namespaceBindings, int properties) throws XPathException {
-        addMapping(getNode());
+        FilePosition start = getCurrentPosition();
         super.namespace(namespaceBindings, properties);
+        addMapping(getNode(), start);
     }
 
     @Override
     public void attribute(NodeName nameCode, SimpleType typeCode, CharSequence value, Location locationId, int properties)
             throws XPathException {
+        FilePosition start = getCurrentPosition();
         Location node = getNode();
         System.out.println(String.format("Serializer.attribute %s @ %s %d:%d", nameCode.getDisplayName(), node.getSystemId(), node.getLineNumber(), node.getColumnNumber()));
-        addMapping(getNode());
         super.attribute(nameCode, typeCode, value, locationId, properties);
+        addMapping(getNode(), start);
     }
 
     @Override
     public void closeStartTag() throws XPathException {
         System.out.println("Serializer.closeStartTag");
-        addMapping(getNode());
+        FilePosition start = getCurrentPosition();
         super.closeStartTag();
+        addMapping(getNode(), start);
     }
 
     // @Override
@@ -135,30 +168,34 @@ public class SourcemapXMLEmitter extends XMLEmitter {
     @Override
     public void endElement() throws XPathException {
         System.out.println("Serializer.endElement");
-        addMapping(getNode());
+        FilePosition start = getCurrentPosition();
         super.endElement();
+        addMapping(getNode(), start);
     }
 
     @Override
     public void characters(CharSequence chars, Location locationId, int properties) throws XPathException {
         System.out.println("Serializer.characters");
-        addMapping(getNode());
+        FilePosition start = getCurrentPosition();
         super.characters(chars, locationId, properties);
+        addMapping(getNode(), start);
     }
 
     @Override
     public void writeCharSequence(CharSequence s) throws java.io.IOException {
         System.out.println("Serializer.charSequence");
-        addMapping(getNode());
+        FilePosition start = getCurrentPosition();
         super.writeCharSequence(s);
+        addMapping(getNode(), start);
     }
 
     @Override
     public void processingInstruction(String target, CharSequence data, Location locationId, int properties)
             throws XPathException {
         System.out.println("Serializer.processingInstruction");
-        addMapping(getNode());
+        FilePosition start = getCurrentPosition();
         super.processingInstruction(target, data, locationId, properties);
+        addMapping(getNode(), start);
     }
 
     // @Override
@@ -170,8 +207,9 @@ public class SourcemapXMLEmitter extends XMLEmitter {
     @Override
     public void comment(CharSequence chars, Location locationId, int properties) throws XPathException {
         System.out.println("Serializer.comment");
-        addMapping(getNode());
+        FilePosition start = getCurrentPosition();
         super.comment(chars, locationId, properties);
+        addMapping(getNode(), start);
     }
 }
 
