@@ -27,6 +27,8 @@ public class SourcemapXMLEmitter extends XMLEmitter {
 
     private SourceMapGenerator sourceMap = SourceMapGeneratorFactory.getInstance(SourceMapFormat.DEFAULT);
 
+    private FilePosition lastWrite = new FilePosition(0, 0);
+
     private Location getNode() {
         if (Hack.outOfBandStack.size() > 0) {
             return Hack.outOfBandStack.peek();
@@ -51,12 +53,15 @@ public class SourcemapXMLEmitter extends XMLEmitter {
             System.out.println("Skipping addMapping because the source node is null");
         } else {
             Hack.printStack();
-            System.out.println(String.format("addMapping from %d:%d-%d:%d to %s %d:%d", start.getLine(),
-                    start.getColumn(), getCurrentPosition().getLine(), getCurrentPosition().getColumn(),
+            FilePosition currentCursor = getCurrentPosition();
+            System.out.println(String.format("addMapping from %d:%d-%d:%d to %s %d:%d", lastWrite.getLine(),
+                    lastWrite.getColumn(), currentCursor.getLine(), currentCursor.getColumn(),
                     source.getSystemId(), source.getLineNumber() - 1, source.getColumnNumber() - 1));
             sourceMap.addMapping(source.getSystemId(), null,
-                    new FilePosition(source.getLineNumber() - 1, source.getColumnNumber() - 1), start,
+                    new FilePosition(source.getLineNumber() - 1, source.getColumnNumber() - 1), lastWrite,
                     getCurrentPosition());
+
+            lastWrite = currentCursor;
         }
     }
 
