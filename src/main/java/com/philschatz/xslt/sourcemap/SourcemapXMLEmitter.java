@@ -1,12 +1,12 @@
 package com.philschatz.xslt.sourcemap;
 
-import net.sf.saxon.serialize.XMLEmitter;
-import net.sf.saxon.trans.XPathException;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.Writer;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.Base64;
@@ -20,6 +20,8 @@ import net.sf.saxon.expr.parser.Location;
 import net.sf.saxon.om.NamespaceBindingSet;
 import net.sf.saxon.om.NodeInfo;
 import net.sf.saxon.om.NodeName;
+import net.sf.saxon.serialize.XMLEmitter;
+import net.sf.saxon.trans.XPathException;
 import net.sf.saxon.type.SchemaType;
 import net.sf.saxon.type.SimpleType;
 
@@ -45,6 +47,20 @@ public class SourcemapXMLEmitter extends XMLEmitter {
         return new FilePosition(myWriter.cursorLine, myWriter.cursorColumn);
     }
 
+    private String toRelative(Location source) {
+        try {
+            URI src = new URI(source.getSystemId());
+            URI out = new URI(this.systemId);
+            if ("file".equals(src.getScheme()) && "file".equals(out.getScheme())) {
+                Path s = Path.of(src);
+                Path o = Path.of(out);
+                return o.getParent().relativize(s).toString();
+            }
+        } catch (URISyntaxException e) {
+        }
+        return source.toString();
+    }
+
     private void addMapping(Location source, FilePosition start) {
         CountingWriter myWriter = (CountingWriter) writer;
         if (myWriter == null) {
@@ -56,8 +72,8 @@ public class SourcemapXMLEmitter extends XMLEmitter {
             FilePosition currentCursor = getCurrentPosition();
             System.out.println(String.format("addMapping from %d:%d-%d:%d to %s %d:%d", lastWrite.getLine(),
                     lastWrite.getColumn(), currentCursor.getLine(), currentCursor.getColumn(),
-                    source.getSystemId(), source.getLineNumber() - 1, source.getColumnNumber() - 1));
-            sourceMap.addMapping(source.getSystemId(), null,
+                    toRelative(source), source.getLineNumber() - 1, source.getColumnNumber() - 1));
+            sourceMap.addMapping(toRelative(source), null,
                     new FilePosition(source.getLineNumber() - 1, source.getColumnNumber() - 1), lastWrite,
                     getCurrentPosition());
 
